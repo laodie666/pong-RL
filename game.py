@@ -129,12 +129,11 @@ class PongGame():
         self.move_paddle(p2_action, 1)
         self.rpaddle_position = max(0, min(screen_h - self.paddle_dimensions[1], self.rpaddle_position))
 
-
         # Check collisions with walls
         if self.ball_position[1] <= 0 or self.ball_position[1] >= screen_h:
             self.ball_velocity[1] = -self.ball_velocity[1]   
             self.ball_position[1] = max(0, min(screen_h, self.ball_position[1]))
-            self.bounce_counter += 0.3
+            self.bounce_counter += 1
             if self.bounce_counter % 3 == 0:
                 self.ball_velocity[1] *= 1.2
                 self.ball_velocity[1] = int(self.ball_velocity[0]+0.5) 
@@ -144,7 +143,7 @@ class PongGame():
             self.ball_velocity[0] = -self.ball_velocity[0]   
             self.ball_position[0] = max(11, min(screen_w-11, self.ball_position[0]))
             self.bounce_counter += 1
-            self.reward[0] += 0.3
+            self.reward[0] += 0.05
             if self.bounce_counter % 3 == 0:
                 self.ball_velocity[0] *= 1.2
                 self.ball_velocity[0] = int(self.ball_velocity[0]+0.5) 
@@ -152,8 +151,8 @@ class PongGame():
         if(self.ball_position[0] + self.ball_radius >= screen_w-10 and self.rpaddle_position <= self.ball_position[1] <= self.rpaddle_position + self.paddle_dimensions[1]):
             self.ball_velocity[0] = -self.ball_velocity[0]   
             self.ball_position[0] = max(11, min(screen_w-11, self.ball_position[0]))
-            self.reward[1] += 1
-            self.bounce_counter += 0.3
+            self.bounce_counter += 1
+            self.reward[1] += 0.05
             if self.bounce_counter % 3 == 0:
                 self.ball_velocity[0] *= 1.2
                 self.ball_velocity[0] = int(self.ball_velocity[0]+0.5) 
@@ -168,6 +167,7 @@ class PongGame():
             done = 1
             win = 0
             self.reward[0] -= abs(self.lpaddle_position-self.ball_position[1])/screen_h
+            self.reward[0] -= 1
             self.reward[1] += 1
               
         elif self.ball_position[0] >= screen_w:
@@ -175,6 +175,7 @@ class PongGame():
             win = 1
             self.reward[0] += 1
             self.reward[1] -= abs(self.rpaddle_position-self.ball_position[1])/screen_h
+            self.reward[1] -= 1
         
         
         # print(actions, done, win, self.reward)
@@ -208,13 +209,17 @@ class NNPlayer(Player):
     
     def getProbabilities(self, game:"PongGame", action):
         
-        return self.m.log_prob(action)
+        return self.m.log_prob(action)    
 
-    
-def train(p2: str):
+def train(p2: str, checkpoint = None):
     policy = PolicyNetwork(6, 64, 3)
+    if checkpoint is not None:
+        print("loaded")
+        state_dict = torch.load(checkpoint)
+        policy.load_state_dict(state_dict)
+        policy.train()
     optimizer = optim.Adam(policy.parameters(), lr=0.001)
-    episodes = 5000
+    episodes = 10000
     
     pygame.init()
     clock = pygame.time.Clock()
@@ -249,7 +254,7 @@ def train(p2: str):
         rewards = [reward[0]]*len(log_probs)
         rewards = torch.tensor(rewards)
         loss = []
-        print(reward)
+        # print(reward)
         for log_prob, R in zip(log_probs, rewards):
             loss.append(-log_prob * R)
         
@@ -258,12 +263,13 @@ def train(p2: str):
         loss.backward()
         optimizer.step()
     
-    torch.save(policy, f"checkpoint{episode}")
+    torch.save(policy.state_dict(), f"checkpoint{episode}.pt")
+
         
 
     
 if __name__ == "__main__":
     
-    train("heuristic")
+    train("heuristic", "checkpoint9999.pt")
 
     
