@@ -16,6 +16,8 @@ class PolicyNetwork(nn.Module):
         self.fc1 = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
             nn.Linear(hidden_size, output_size),
             nn.Softmax(dim=1)
         )
@@ -132,7 +134,7 @@ class PongGame():
         if self.ball_position[1] <= 0 or self.ball_position[1] >= screen_h:
             self.ball_velocity[1] = -self.ball_velocity[1]   
             self.ball_position[1] = max(0, min(screen_h, self.ball_position[1]))
-            self.bounce_counter += 1
+            self.bounce_counter += 0.3
             if self.bounce_counter % 3 == 0:
                 self.ball_velocity[1] *= 1.2
                 self.ball_velocity[1] = int(self.ball_velocity[0]+0.5) 
@@ -142,7 +144,7 @@ class PongGame():
             self.ball_velocity[0] = -self.ball_velocity[0]   
             self.ball_position[0] = max(11, min(screen_w-11, self.ball_position[0]))
             self.bounce_counter += 1
-            self.reward[0] += 1
+            self.reward[0] += 0.3
             if self.bounce_counter % 3 == 0:
                 self.ball_velocity[0] *= 1.2
                 self.ball_velocity[0] = int(self.ball_velocity[0]+0.5) 
@@ -151,7 +153,7 @@ class PongGame():
             self.ball_velocity[0] = -self.ball_velocity[0]   
             self.ball_position[0] = max(11, min(screen_w-11, self.ball_position[0]))
             self.reward[1] += 1
-            self.bounce_counter += 1
+            self.bounce_counter += 0.3
             if self.bounce_counter % 3 == 0:
                 self.ball_velocity[0] *= 1.2
                 self.ball_velocity[0] = int(self.ball_velocity[0]+0.5) 
@@ -166,12 +168,12 @@ class PongGame():
             done = 1
             win = 0
             self.reward[0] -= abs(self.lpaddle_position-self.ball_position[1])/screen_h
-            self.reward[1] += 100
+            self.reward[1] += 1
               
         elif self.ball_position[0] >= screen_w:
             done = 1
             win = 1
-            self.reward[0] += 100
+            self.reward[0] += 1
             self.reward[1] -= abs(self.rpaddle_position-self.ball_position[1])/screen_h
         
         
@@ -210,7 +212,7 @@ class NNPlayer(Player):
 
     
 def train(p2: str):
-    policy = PolicyNetwork(6, 128, 3)
+    policy = PolicyNetwork(6, 64, 3)
     optimizer = optim.Adam(policy.parameters(), lr=0.001)
     episodes = 5000
     
