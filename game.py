@@ -237,9 +237,16 @@ def train(p2: str, checkpoint = None):
         
         log_probs = []
         rewards = []
-        
+
+        entropy_term = 0
+
         actions, done, win, reward = game.step()
-        log_probs.append(p1.getProbabilities(game, torch.tensor(actions[0])))
+        log_prob = p1.getProbabilities(game, torch.tensor(actions[0]))
+        log_probs.append(log_prob)
+        p = torch.exp(log_prob)
+        entropy = -p * log_prob
+        entropy_term += entropy
+        
         while done != 1:
             if episode > 1000 and (episode % 200 == 0 or reward[0] > 10):
                 screen = pygame.display.set_mode((screen_w, screen_h))
@@ -248,9 +255,13 @@ def train(p2: str, checkpoint = None):
                 clock.tick(30)
                 
             actions, done, win, reward = game.step()
-            log_probs.append(p1.getProbabilities(game, torch.tensor(actions[0])))
+            log_prob = p1.getProbabilities(game, torch.tensor(actions[0]))
+            log_probs.append(log_prob)
+            p = torch.exp(log_prob)
+            entropy = -p * log_prob
+            entropy_term += entropy
             
-            
+        
         rewards = [reward[0]]*len(log_probs)
         rewards = torch.tensor(rewards)
         loss = []
@@ -259,7 +270,7 @@ def train(p2: str, checkpoint = None):
             loss.append(-log_prob * R)
         
         optimizer.zero_grad()
-        loss = torch.stack(loss).sum()
+        loss = torch.stack(loss).sum() - (0.01 * entropy_term)
         loss.backward()
         optimizer.step()
     
