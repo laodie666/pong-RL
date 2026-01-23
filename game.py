@@ -16,10 +16,8 @@ class PolicyNetwork(nn.Module):
         self.fc1 = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.1),
-            nn.Linear(hidden_size, hidden_size), 
+            nn.Linear(hidden_size, hidden_size),
             nn.ReLU(),
-            nn.Dropout(0.1),
             nn.Linear(hidden_size, output_size),
             nn.Softmax(dim=1)
         )
@@ -283,6 +281,6 @@ def train(p2: str, checkpoint = None):
     
 if __name__ == "__main__":
     
-    train("heuristic")
+    train("heuristic", "checkpoint9999.pt")
 
     
